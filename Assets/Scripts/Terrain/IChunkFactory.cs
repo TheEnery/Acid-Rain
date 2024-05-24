@@ -6,5 +6,6 @@ namespace AcidRain.Terrain
     {
         public int Seed { get; }
         public GameObject Create(int x, int z);
+        public Vector2Int WorldToChunkSystem(Vector3 position);
     }
 }

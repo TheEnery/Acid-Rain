@@ -224,5 +224,12 @@ namespace AcidRain.Terrain
 
             return hash;
         }
+
+        public Vector2Int WorldToChunkSystem(Vector3 position)
+        {
+            return new Vector2Int(
+                Mathf.FloorToInt(position.x / ChunkSideLength),
+                Mathf.FloorToInt(position.z / ChunkSideLength));
+        }
     }
 }
