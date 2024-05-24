@@ -36,7 +36,7 @@ namespace AcidRain.Entities.Drone
 
         public event EventHandler<DischargedEventArgs> Discharged;
 
-        public float Charge { get; private set; } = 1000f;
+        public float Charge { get; private set; } = 100000f;
         public IConnector Connector { get; private set; }
         public bool IsCameraOn { get { return _camera.enabled; } private set { _camera.enabled = value; } }
         public bool InDefaultState { get => _aimer.IsDefault; }
