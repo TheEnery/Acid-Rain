@@ -1,33 +1,30 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
 namespace AcidRain.Terrain
 {
-    public class DiamondSquareChunkFactory : IChunkFactory
+    public class DiamondSquareChunkMeshFactory : IChunkMeshFactory
     {
-        public const float ChunkSideLength = 45f;
         public const int VerticesOnSide = 17;
 
+        public float ChunkSideLength => 45f;
         public int Seed {  get; private set; }
 
-        // since the triangles are independent of the coordinates of the vertices, I can reuse them
+        // since the triangles are independent
+        // of the coordinates of the vertices, I can reuse them
         private readonly int[] _cachedTrianglesArray;
 
-        public DiamondSquareChunkFactory(int seed) 
+        public DiamondSquareChunkMeshFactory(int seed) 
         { 
             Seed = seed;
             _cachedTrianglesArray = CreateTrianglesArray();
         }
 
-        public GameObject Create(int x, int z)
+        public Mesh Create(int x, int z)
         {
             Vector3[] vertices = CreateVerticesArray(x, z);
             int[] triangles = _cachedTrianglesArray.ToArray();
-
-            var chunk = new GameObject($"ChunkX{x}Z{z}");
-            chunk.transform.localPosition = new Vector3(x * ChunkSideLength, 0, z * ChunkSideLength);
 
             var mesh = new Mesh
             {
@@ -37,21 +34,7 @@ namespace AcidRain.Terrain
 
             mesh.RecalculateNormals();
 
-            AddComponents(chunk, mesh);
-
-            return chunk;
-        }
-
-        private void AddComponents(GameObject chunk, Mesh mesh)
-        {
-            var meshFilter = chunk.AddComponent<MeshFilter>();
-            meshFilter.mesh = mesh;
-
-            var meshRenderer = chunk.AddComponent<MeshRenderer>();
-            meshRenderer.material = new Material(Shader.Find("Standard"));
-
-            var meshCollider = chunk.AddComponent<MeshCollider>();
-            meshCollider.sharedMesh = mesh;
+            return mesh;
         }
 
         private int[] CreateTrianglesArray()

@@ -8,8 +8,8 @@ namespace AcidRain.Terrain
 {
     public class TerrainGenerator : MonoBehaviour
     {
-        private IChunkFactory _chunkFactory;
-        private Dictionary<Vector2Int, GameObject> _chunks = new();
+        private IChunkMeshFactory _chunkMeshFactory;
+        private Dictionary<Vector2Int, Chunk> _chunks = new();
         private Vector2Int _currentCenter;
         [SerializeField] private int _drawingDistance = 4;
         [SerializeField] private int _loadingDistance = 6;
@@ -18,7 +18,7 @@ namespace AcidRain.Terrain
 
         private void Start()
         {
-            _chunkFactory = new DiamondSquareChunkFactory(_seed);
+            _chunkMeshFactory = new DiamondSquareChunkMeshFactory(_seed);
 
             _player = GameObject.Find("Body(Clone)");
 
@@ -27,10 +27,16 @@ namespace AcidRain.Terrain
             StartCoroutine(CheckChunkLoading());
         }
 
-        private GameObject CreateChunk(int x, int z)
+        private Chunk CreateChunk(int x, int z)
         {
-            var chunk = _chunkFactory.Create(x, z);
-            chunk.transform.SetParent(transform, false);
+            var chunkMesh = _chunkMeshFactory.Create(x, z);
+            var position = new Vector3
+            {
+                x = x * _chunkMeshFactory.ChunkSideLength,
+                z = z * _chunkMeshFactory.ChunkSideLength,
+            };
+            var chunk = Chunk.Create(chunkMesh, position, transform);
+           
             return chunk;
         }
 
@@ -40,7 +46,7 @@ namespace AcidRain.Terrain
             {
                 yield return new WaitForSeconds(3f);
 
-                var newCenter = _chunkFactory.WorldToChunkSystem(_player.transform.position);
+                var newCenter = _chunkMeshFactory.WorldToChunkSystem(_player.transform.position);
                 
                 if (newCenter != _currentCenter)
                 {
@@ -63,7 +69,7 @@ namespace AcidRain.Terrain
                         {
                             if ((kvChunk.Key - _currentCenter).magnitude > _drawingDistance)
                             {
-                                kvChunk.Value.GetComponent<MeshRenderer>().enabled = false;
+                                kvChunk.Value.Visible = false;
                             }
                         });
                     
@@ -82,9 +88,9 @@ namespace AcidRain.Terrain
                 {
                     var position = new Vector2Int(_currentCenter.x + i, _currentCenter.y + j);
 
-                    if (_chunks.TryGetValue(position, out GameObject chunk))
+                    if (_chunks.TryGetValue(position, out Chunk chunk))
                     {
-                        chunk.GetComponent<MeshRenderer>().enabled = true;
+                        chunk.Visible = true;
                     }
                     else
                     {

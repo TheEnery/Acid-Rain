@@ -2,10 +2,11 @@ using UnityEngine;
 
 namespace AcidRain.Terrain
 {
-    public interface IChunkFactory
+    public interface IChunkMeshFactory
     {
+        public float ChunkSideLength { get; }
         public int Seed { get; }
-        public GameObject Create(int x, int z);
+        public Mesh Create(int x, int z);
         public Vector2Int WorldToChunkSystem(Vector3 position);
     }
 }
