@@ -1,4 +1,4 @@
-
+using AcidRain.Utilities.General;
 using System;
 using UnityEngine;
 
@@ -36,7 +36,7 @@ namespace AcidRain.Entities.Drone
 
         public event EventHandler<DischargedEventArgs> Discharged;
 
-        public float Charge { get; private set; } = 1000f;
+        public float Charge { get; private set; } = 10000f;
         public IConnector Connector { get; private set; }
         public bool IsCameraOn { get { return _camera.enabled; } private set { _camera.enabled = value; } }
         public bool InDefaultState { get => _aimer.IsDefault; }
@@ -89,12 +89,16 @@ namespace AcidRain.Entities.Drone
 
         private void AimTo(Quaternion rotation)
         {
-            Vector3 euler = rotation.eulerAngles;
+            Vector3 droneUp = Vector3.up;
+            Quaternion droneRotation = rotation.ProjectOnPlane(droneUp);
 
-            Vector3 droneTorque = _pd.GetTorque(_droneRigidbody, Quaternion.Euler(0f, euler.y, 0f));
+            Vector3 droneTorque = _pd.GetTorque(_droneRigidbody, droneRotation);
             _droneRigidbody.AddTorque(droneTorque);
 
-            Vector3 cameraTorque = _pd.GetTorque(_cameraRigidbody, Quaternion.Euler(euler.x, 0f, euler.z));
+            Vector3 cameraRight = _droneRigidbody.rotation * Vector3.right;
+            Quaternion cameraRotation = rotation.ProjectOnPlane(cameraRight);
+
+            Vector3 cameraTorque = _pd.GetTorque(_cameraRigidbody, cameraRotation);
             _cameraRigidbody.AddTorque(cameraTorque);
         }
 
