@@ -22,7 +22,7 @@ namespace AcidRain.Entities.Drone
 
     public partial class Controller : MonoBehaviour
     {
-        public const float MovementSpeed = 0.3f;
+        public const float MaxMovementForce = 300f;
         private const float _positionAccuracy = 0.2f;
         private const float _rotationAccuracy = 7f;
 
@@ -31,14 +31,20 @@ namespace AcidRain.Entities.Drone
         private Rigidbody _cameraRigidbody;
         private Rigidbody _droneRigidbody;
         private bool _isDischarged = false;
-        private Utilities.Physics.IPdController _pd;
+        [SerializeReference] private Utilities.General.IRotationController _cameraRotationPd;
+        [SerializeReference] private Utilities.General.IRotationController _droneRotationPd;
+        [SerializeReference] private Utilities.General.IMovementController _droneMovementPd;
         private Rigidbody _rigidbodyForAttaching;
 
         public event EventHandler<DischargedEventArgs> Discharged;
 
-        public float Charge { get; private set; } = 10000f;
+        public float Charge { get; private set; } = 100000f;
         public IConnector Connector { get; private set; }
-        public bool IsCameraOn { get { return _camera.enabled; } private set { _camera.enabled = value; } }
+        public bool IsCameraOn
+        {
+            get { return _camera.enabled; }
+            private set { _camera.enabled = value; }
+        }
         public bool InDefaultState { get => _aimer.IsDefault; }
         public bool IsDischarged
         {
@@ -60,15 +66,35 @@ namespace AcidRain.Entities.Drone
         }
         public bool IsEnabled { get; private set; } = false;
         public float LowCharge { get; private set; } = 100f;
-        public float MaxCharge { get; private set; } = 1000f;
+        public float Mass => _cameraRigidbody.mass + _droneRigidbody.mass;
+        public float MaxCharge { get; private set; } = 100000f;
         public Vector3 Position { get { return _droneRigidbody.position; } }
         public Quaternion Rotation { get { return _cameraRigidbody.rotation; } }
 
-        public void ConnectTo(IConnector connector, Rigidbody rigidbody, IControllingState aimer, Utilities.Physics.IPdController pd)
+        public void ConnectTo(IConnector connector, Rigidbody rigidbody, IControllingState aimer)
         {
             Connector = connector;
             SetAimer(aimer);
-            _pd = pd;
+
+            _cameraRotationPd = new Utilities.Controllers.ForwardRotationPd()
+            {
+                Rigidbody = _cameraRigidbody,
+                Derivative = 1400f,
+                Proportional = 800f
+            };
+            _droneRotationPd = new Utilities.Controllers.ForwardRotationPd()
+            {
+                Rigidbody = _droneRigidbody,
+                Derivative = 1800f,
+                Proportional = 900f
+            };
+            _droneMovementPd = new Utilities.Controllers.StableMovementControllerV1()
+            {
+                Rigidbody = _droneRigidbody,
+                MaxForce = MaxMovementForce,
+                Mass = Mass
+            };
+
             _rigidbodyForAttaching = rigidbody;
             IsEnabled = true;
         }
@@ -77,7 +103,6 @@ namespace AcidRain.Entities.Drone
         {
             Connector = null;
             SetAimer(null);
-            _pd = null;
             _rigidbodyForAttaching = null;
             IsEnabled = false;
         }
@@ -92,13 +117,13 @@ namespace AcidRain.Entities.Drone
             Vector3 droneUp = Vector3.up;
             Quaternion droneRotation = rotation.ProjectOnPlane(droneUp);
 
-            Vector3 droneTorque = _pd.GetTorque(_droneRigidbody, droneRotation);
+            Vector3 droneTorque = _droneRotationPd.GetTorque(droneRotation);
             _droneRigidbody.AddTorque(droneTorque);
 
             Vector3 cameraRight = _droneRigidbody.rotation * Vector3.right;
             Quaternion cameraRotation = rotation.ProjectOnPlane(cameraRight);
 
-            Vector3 cameraTorque = _pd.GetTorque(_cameraRigidbody, cameraRotation);
+            Vector3 cameraTorque = _cameraRotationPd.GetTorque(cameraRotation);
             _cameraRigidbody.AddTorque(cameraTorque);
         }
 
@@ -129,8 +154,7 @@ namespace AcidRain.Entities.Drone
 
         private void MoveTo(Vector3 desiredPosition)
         {
-            Vector3 desiredVelocity = (desiredPosition - Position) * MovementSpeed;
-            Vector3 neededForce = _pd.GetForce(_droneRigidbody.position, desiredPosition, _droneRigidbody.velocity, desiredVelocity);
+            Vector3 neededForce = _droneMovementPd.GetForce(desiredPosition);
             _droneRigidbody.AddForce(neededForce);
         }
 

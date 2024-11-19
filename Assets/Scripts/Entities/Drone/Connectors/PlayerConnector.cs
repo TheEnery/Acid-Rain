@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -84,7 +83,7 @@ namespace AcidRain.Entities.Drone
             DroneCount++;
             Slot slot = _slots.Find((slot) => slot.Drone == null);
             slot.Drone = drone;
-            drone.ConnectTo(this, _rigidbodyForAttaching, new Controller.FpvMode(), new Utilities.Physics.ForwardPd());
+            drone.ConnectTo(this, _rigidbodyForAttaching, new Controller.FpvMode());
             drone.Discharged += PreventDroneDisabling;
         }
 

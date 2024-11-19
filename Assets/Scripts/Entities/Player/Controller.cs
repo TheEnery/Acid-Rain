@@ -1,4 +1,3 @@
-
 using UnityEngine;
 
 namespace AcidRain.Entities.Player
@@ -7,13 +6,15 @@ namespace AcidRain.Entities.Player
     {
         public const float MaxHeadPitchAngle = 70f;
         public const float MaxHeadYawAngle = 60f;
-        public const float MovementSpeed = 15f;
+        public const float MovementSpeed = 15f; // Not in use
 
         private IControllingState _aimer;
         private Rigidbody _bodyRigidbody;
         private Camera _camera;
         private Rigidbody _headRigidbody;
-        [SerializeReference] private Utilities.Physics.IPdController _pd; //
+        [SerializeReference] private Utilities.General.IRotationController _headRotationPd;
+        [SerializeReference] private Utilities.General.IRotationController _bodyRotationPd;
+        [SerializeReference] private Utilities.General.IMovementController _bodyMovementPd;
 
         public float BodyYaw { get; private set; } = 0f;
         public Drone.PlayerConnector DroneConnector { get; private set; }
@@ -26,14 +27,14 @@ namespace AcidRain.Entities.Player
 
         private void AimBodyTo(Quaternion desiredRotation)
         {
-            Vector3 neededTorque = _pd.GetTorque(_bodyRigidbody, desiredRotation);
+            Vector3 neededTorque = _bodyRotationPd.GetTorque(desiredRotation);
             _bodyRigidbody.AddTorque(neededTorque);
         }
 
         private void AimHeadTo(Quaternion desiredRotation)
         {
 
-            Vector3 neededTorque = _pd.GetTorque(_headRigidbody, desiredRotation);
+            Vector3 neededTorque = _headRotationPd.GetTorque(desiredRotation);
             _headRigidbody.AddTorque(neededTorque);
         }
 
@@ -44,7 +45,24 @@ namespace AcidRain.Entities.Player
             _headRigidbody = head.GetComponent<Rigidbody>();
             _camera = head.GetComponent<Camera>();
 
-            _pd = new Utilities.Physics.ForwardPd();
+            _headRotationPd = new Utilities.Controllers.WikiRotationPid()
+            {
+                Rigidbody = _headRigidbody,
+                Derivative = 1.25f,
+                Integral = 50f,
+                Proportional = 20f
+            };
+            _bodyRotationPd = new Utilities.Controllers.ForwardRotationPd()
+            {
+                Rigidbody = _bodyRigidbody
+            };
+            _bodyMovementPd = new Utilities.Controllers.ForwardMovementPd()
+            {
+                Rigidbody = _bodyRigidbody,
+                Derivative = 35f,
+                Proportional = 700f
+            };
+
             DroneConnector = Drone.PlayerConnector.Create(this, _bodyRigidbody);
             SetAimer(new FpvMode());
         }
@@ -62,8 +80,7 @@ namespace AcidRain.Entities.Player
                 return;
             }
             IsWalking = true;
-            Vector3 desiredVelocity = (desiredPosition - Position) * MovementSpeed;
-            Vector3 neededForce = _pd.GetForce(_bodyRigidbody.position, desiredPosition, _bodyRigidbody.velocity, desiredVelocity);
+            Vector3 neededForce = _bodyMovementPd.GetForce(desiredPosition);
             _bodyRigidbody.AddForce(neededForce);
         }
 

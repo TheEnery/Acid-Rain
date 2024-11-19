@@ -18,5 +18,16 @@ namespace AcidRain.Utilities.General
                 return rotation * dif;
             }
         }
+
+        static public void EnsureShortWayAround(this ref Quaternion rotation)
+        {
+            if (rotation.w < 0f)
+            {
+                rotation.x = -rotation.x;
+                rotation.y = -rotation.y;
+                rotation.z = -rotation.z;
+                rotation.w = -rotation.w;
+            }
+        }
     }
 }

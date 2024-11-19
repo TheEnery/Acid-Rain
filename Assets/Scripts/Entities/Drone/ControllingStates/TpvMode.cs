@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using UnityEngine;
 
 namespace AcidRain.Entities.Drone
@@ -21,6 +20,7 @@ namespace AcidRain.Entities.Drone
             {
                 _positionShift = DefaultDistance * DefaultShiftDirection;
                 _positionShift.x *= Mathf.Sign(Connector.GetJointPosition(Drone).x);
+                // I want the drone to look past the head
                 _aimShift = new Vector3(_positionShift.x, _positionShift.y, 0f);
                 Drone.IsCameraOn = true;
                 Drone.Discharged += PreventDroneDisabling;
@@ -44,7 +44,7 @@ namespace AcidRain.Entities.Drone
             public override Quaternion GetNextRotation()
             {
                 Quaternion rotation = Quaternion.Euler(Connector.Player.HeadPitch, Connector.Player.HeadYaw, 0f);
-                Vector3 lookDirection = Connector.Player.Position + rotation * _aimShift - GetNextPosition();
+                Vector3 lookDirection = Connector.Player.Position + rotation * _aimShift - Drone.Position;
                 return Quaternion.LookRotation(lookDirection, Vector3.up);
             }
 
