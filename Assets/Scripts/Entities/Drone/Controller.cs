@@ -30,11 +30,13 @@ namespace AcidRain.Entities.Drone
         private Camera _camera;
         private Rigidbody _cameraRigidbody;
         private Rigidbody _droneRigidbody;
+        private FixedJoint _cameraToConnectorJoint;
+        private FixedJoint _cameraToDroneJoint;
+        private Rigidbody _connectorRigidbody;
         private bool _isDischarged = false;
         [SerializeReference] private Utilities.General.IRotationController _cameraRotationPd;
         [SerializeReference] private Utilities.General.IRotationController _droneRotationPd;
         [SerializeReference] private Utilities.General.IMovementController _droneMovementPd;
-        private Rigidbody _rigidbodyForAttaching;
 
         public event EventHandler<DischargedEventArgs> Discharged;
 
@@ -95,7 +97,7 @@ namespace AcidRain.Entities.Drone
                 Mass = Mass
             };
 
-            _rigidbodyForAttaching = rigidbody;
+            _connectorRigidbody = rigidbody;
             IsEnabled = true;
         }
 
@@ -103,7 +105,7 @@ namespace AcidRain.Entities.Drone
         {
             Connector = null;
             SetAimer(null);
-            _rigidbodyForAttaching = null;
+            _connectorRigidbody = null;
             IsEnabled = false;
         }
 
@@ -129,16 +131,20 @@ namespace AcidRain.Entities.Drone
 
         private void Attach()
         {
-            FixedJoint joint = gameObject.AddComponent<FixedJoint>();
-            joint.connectedBody = _rigidbodyForAttaching;
+            _cameraToConnectorJoint = _cameraRigidbody.gameObject.AddComponent<FixedJoint>();
+            _cameraToConnectorJoint.connectedBody = _connectorRigidbody;
+
+            _cameraToDroneJoint = _cameraRigidbody.gameObject.AddComponent<FixedJoint>();
+            _cameraToDroneJoint.connectedBody = _droneRigidbody;
+
             IsEnabled = false;
         }
 
         private void Awake()
         {
+            _camera = transform.GetChild(0).GetComponent<Camera>();
             _cameraRigidbody = gameObject.transform.GetChild(0).GetComponent<Rigidbody>();
             _droneRigidbody = gameObject.GetComponent<Rigidbody>();
-            _camera = transform.GetChild(0).GetComponent<Camera>();
         }
 
         private void ChangeAimer(object sender, IControllingState.ChangeStateEventArgs e)
@@ -148,7 +154,12 @@ namespace AcidRain.Entities.Drone
 
         private void Detach()
         {
-            Destroy(GetComponent<FixedJoint>());
+            Destroy(_cameraToConnectorJoint);
+            _cameraToConnectorJoint = null;
+
+            Destroy(_cameraToDroneJoint);
+            _cameraToDroneJoint = null;
+
             IsEnabled = true;
         }
 
