@@ -142,8 +142,9 @@ namespace AcidRain.Entities.Drone
 
         private void Awake()
         {
-            _camera = transform.GetChild(0).GetComponent<Camera>();
-            _cameraRigidbody = gameObject.transform.GetChild(0).GetComponent<Rigidbody>();
+            var cameraTransform = transform.GetChild(0);
+            _camera = cameraTransform.GetChild(0).GetComponent<Camera>();
+            _cameraRigidbody = cameraTransform.GetComponent<Rigidbody>();
             _droneRigidbody = gameObject.GetComponent<Rigidbody>();
         }
 
